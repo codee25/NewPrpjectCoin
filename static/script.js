@@ -5,15 +5,17 @@ if (!userId) {
     alert("Error: User ID is missing in the URL!");
     throw new Error("User ID is missing");
 }
-console.log("User ID:", userId); // Лог user_id для перевірки
+console.log("User ID:", userId);
 
 // Функція для оновлення елементів на сторінці
 function updateUI(balance, currentHp, damage) {
-    document.getElementById("balance").innerText = balance;
-    document.getElementById("hp").innerText = currentHp;
-    document.getElementById("hp-progress").style.width = (currentHp / 100) * 100 + "%";
+    document.getElementById("balance")?.innerText = balance;
+    document.getElementById("hp")?.innerText = currentHp;
+    document.getElementById("hp-progress")?.style.width = Math.max(0, (currentHp / 100) * 100) + "%";
     hp = currentHp;
-    localStorage.setItem("damage", damage); // Зберігаємо урон локально
+    if (damage !== null) {
+        localStorage.setItem("damage", damage); // Зберігаємо урон локально
+    }
 }
 
 // Завантаження статистики з сервера
@@ -31,31 +33,30 @@ async function loadStats() {
         const data = await response.json();
         console.log("Server response:", data);
 
-        document.getElementById("balance").innerText = data.balance;
-        document.getElementById("hp").innerText = data.hp;
-        document.getElementById("hp-progress").style.width = (data.hp / 100) * 100 + "%";
+        updateUI(data.balance, data.hp, data.damage);
     } catch (error) {
         console.error("Failed to load stats:", error);
-        document.getElementById("balance").innerText = "Error";
-        document.getElementById("hp").innerText = "Error";
+        updateUI("Error", "Error", null);
     }
 }
 
 // Обробка кліків по монстру
 async function hitMonster() {
     try {
+        console.log("Sending POST request to /api/hit...");
         const response = await fetch("/api/hit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId }) // Передаємо user_id на сервер
+            body: JSON.stringify({ user_id: userId })
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
         const data = await response.json();
+        console.log("Monster hit response:", data);
+
         if (data.error) throw new Error(data.error);
 
-        // Оновлюємо баланс і HP на сторінці
         updateUI(data.balance, data.hp, localStorage.getItem("damage"));
     } catch (error) {
         console.error("Failed to hit monster:", error);
@@ -65,15 +66,18 @@ async function hitMonster() {
 // Обробка покупки покращень
 async function buyUpgrade(type) {
     try {
+        console.log("Sending POST request to /api/buy...");
         const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, type: type }) // Передаємо user_id і тип покращення
+            body: JSON.stringify({ user_id: userId, type: type })
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
         const data = await response.json();
+        console.log("Upgrade response:", data);
+
         if (data.success) {
             alert("🎉 Upgrade successful!");
             updateUI(data.balance, hp, data.damage); // Оновлюємо баланс і урон
@@ -85,7 +89,13 @@ async function buyUpgrade(type) {
     }
 }
 
-// Прив'язка функцій до елементів
-document.getElementById("monster").addEventListener("click", hitMonster);
-document.getElementById("buy-damage").addEventListener("click", () => buyUpgrade("damage"));
+// Перевірка наявності елементів перед додаванням подій
+if (document.getElementById("monster")) {
+    document.getElementById("monster").addEventListener("click", hitMonster);
+}
+if (document.getElementById("buy-damage")) {
+    document.getElementById("buy-damage").addEventListener("click", () => buyUpgrade("damage"));
+}
+
+// Завантажуємо статистику при завантаженні сторінки
 window.onload = loadStats;
