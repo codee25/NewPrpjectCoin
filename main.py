@@ -73,7 +73,7 @@ async def cmd_start(message: types.Message):
         ]
     )
     await message.answer(f"🎮 Welcome, {username}!\n🚀 Launch the app to start playing.", reply_markup=start_button)
-    
+
 # Обробка команди /reward
 @dp.message(Command("reward"))
 async def cmd_reward(message: types.Message):
