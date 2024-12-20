@@ -30,6 +30,7 @@ def get_stats():
         data = request.get_json()
         user_id = data.get("user_id")
         username = data.get("username", "Unknown")
+        print(f"[GET STATS] Received request with user_id: {user_id}, username: {username}")
     elif request.method == "GET":
         user_id = request.args.get("user_id")
     if not user_id:
