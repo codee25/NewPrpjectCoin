@@ -29,40 +29,24 @@ function updateUI(balance, currentHp, damage) {
 // Завантаження статистики з сервера
 async function loadStats() {
     try {
-        const tg = window.Telegram.WebApp;
-
-        // Отримання user_id і username з Telegram WebApp
-        const userId = tg.initDataUnsafe.user?.id;
-        const username = tg.initDataUnsafe.user?.username || "Unknown";
-
-        if (!userId) {
-            throw new Error("User ID is missing from Telegram WebApp.");
-        }
-
-        console.log("Sending POST request to /api/stats with:", { user_id: userId, username: username });
-
-        // Відправка запиту до сервера
         const response = await fetch("/api/stats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, username: username })
+            body: JSON.stringify({ user_id: userId }) // Передаємо user_id
         });
 
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
         const data = await response.json();
-        console.log("Server response:", data);
+        if (data.error) throw new Error(data.error);
 
-        // Оновлення інтерфейсу
-        updateUI(data.balance, data.hp, data.damage);
+        document.getElementById("balance").innerText = data.balance;
+        document.getElementById("hp").innerText = data.hp;
+        document.getElementById("hp-progress").style.width = (data.hp / 100) * 100 + "%";
     } catch (error) {
         console.error("Failed to load stats:", error);
-
-        // Оновлення інтерфейсу в разі помилки
-        updateUI("Error", "Error", null);
     }
 }
 
+window.onload = loadStats;
 
 // Обробка кліків по монстру
 async function hitMonster() {
