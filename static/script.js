@@ -44,19 +44,15 @@ async function loadStats() {
 // Обробка кліків по монстру
 async function hitMonster() {
     try {
-        console.log("Sending POST request to /api/hit...");
         const response = await fetch("/api/hit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, username: "YourUsername" })
-
+            body: JSON.stringify({ user_id: userId }) // Передаємо user_id
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
         const data = await response.json();
-        console.log("Monster hit response:", data);
-
         if (data.error) throw new Error(data.error);
 
         updateUI(data.balance, data.hp, localStorage.getItem("damage"));
