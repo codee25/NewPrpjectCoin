@@ -1,9 +1,10 @@
 import asyncio
 import sqlite3
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
+from aiogram import Bot, Dispatcher, html
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.filters import CommandStart, Command
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 # Токен бота
 TOKEN = "7556550957:AAFvp8wDZA-x1m0vCem5iFs6BX8TQVjRKDQ"
 
@@ -60,23 +61,29 @@ def add_reward(user_id):
 
 # Обробка команди /start
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message):
+async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "Unknown"
 
     # Додаємо нового користувача або ігноруємо, якщо він уже є
-    setup_user(user_id, username)
 
+    setup_user(user_id, username)
     start_button = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Launch App", url=f"http://127.0.0.1:5000/?user_id={user_id}")]
+            [
+                InlineKeyboardButton(
+                    text="🚀 Launch App",
+                    web_app=WebAppInfo(url=f"https://newprpjectcoin.onrender.com//?user_id={user_id}")
+                )
+            ]
         ]
     )
+
     await message.answer(f"🎮 Welcome, {username}!\n🚀 Launch the app to start playing.", reply_markup=start_button)
 
 # Обробка команди /reward
 @dp.message(Command("reward"))
-async def cmd_reward(message: types.Message):
+async def cmd_reward(message: Message):
     user_id = message.from_user.id
     add_reward(user_id)
     balance = get_balance(user_id)
