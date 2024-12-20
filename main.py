@@ -73,7 +73,7 @@ async def cmd_start(message: Message):
             [
                 InlineKeyboardButton(
                     text="🚀 Launch App",
-                    web_app=WebAppInfo(url=f"https://newprpjectcoin.onrender.com//?user_id={user_id}")
+                    web_app=WebAppInfo(url=f"https://newprpjectcoin.onrender.com/?user_id={user_id}")
                 )
             ]
         ]
