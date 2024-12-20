@@ -7,6 +7,14 @@ if (!userId) {
 }
 console.log("User ID:", userId);
 
+const tg = window.Telegram.WebApp;
+
+// Логування для перевірки даних користувача
+if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    console.log("Telegram User:", tg.initDataUnsafe.user);
+}
+
+
 // Функція для оновлення елементів на сторінці
 function updateUI(balance, currentHp, damage) {
     document.getElementById("balance").innerText = balance;
@@ -21,11 +29,23 @@ function updateUI(balance, currentHp, damage) {
 // Завантаження статистики з сервера
 async function loadStats() {
     try {
-        console.log("Sending POST request to /api/stats...");
+        const tg = window.Telegram.WebApp;
+
+        // Отримання user_id і username з Telegram WebApp
+        const userId = tg.initDataUnsafe.user?.id;
+        const username = tg.initDataUnsafe.user?.username || "Unknown";
+
+        if (!userId) {
+            throw new Error("User ID is missing from Telegram WebApp.");
+        }
+
+        console.log("Sending POST request to /api/stats with:", { user_id: userId, username: username });
+
+        // Відправка запиту до сервера
         const response = await fetch("/api/stats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({ user_id: userId, username: username })
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -33,12 +53,16 @@ async function loadStats() {
         const data = await response.json();
         console.log("Server response:", data);
 
+        // Оновлення інтерфейсу
         updateUI(data.balance, data.hp, data.damage);
     } catch (error) {
         console.error("Failed to load stats:", error);
+
+        // Оновлення інтерфейсу в разі помилки
         updateUI("Error", "Error", null);
     }
 }
+
 
 // Обробка кліків по монстру
 async function hitMonster() {
