@@ -7,13 +7,6 @@ if (!userId) {
 }
 console.log("User ID:", userId);
 
-const tg = window.Telegram.WebApp;
-
-// Логування для перевірки даних користувача
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-    console.log("Telegram User:", tg.initDataUnsafe.user);
-}
-
 
 // Функція для оновлення елементів на сторінці
 function updateUI(balance, currentHp, damage) {
@@ -32,21 +25,21 @@ async function loadStats() {
         const response = await fetch("/api/stats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId }) // Передаємо user_id
+            body: JSON.stringify({ user_id: userId, username: "YourUsername" }) // Передаємо ім'я
         });
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-        document.getElementById("balance").innerText = data.balance;
-        document.getElementById("hp").innerText = data.hp;
-        document.getElementById("hp-progress").style.width = (data.hp / 100) * 100 + "%";
+        const data = await response.json();
+        console.log("Server response:", data);
+
+        updateUI(data.balance, data.hp, data.damage);
     } catch (error) {
         console.error("Failed to load stats:", error);
+        updateUI("Error", "Error", null);
     }
 }
 
-window.onload = loadStats;
 
 // Обробка кліків по монстру
 async function hitMonster() {
@@ -55,7 +48,8 @@ async function hitMonster() {
         const response = await fetch("/api/hit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({ user_id: userId, username: "YourUsername" })
+
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -78,7 +72,8 @@ async function buyUpgrade(type) {
         const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, type: type })
+            body: JSON.stringify({ user_id: userId, username: "YourUsername" })
+
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
