@@ -104,30 +104,45 @@ def hit_monster():
 
 @app.route("/api/buy", methods=["POST"])
 def buy_upgrade():
-    data = request.get_json()
-    user_id = data.get("user_id")
-    upgrade_type = data.get("type")
-    if not user_id or not upgrade_type:
-        return jsonify({"success": False, "message": "Missing user_id or upgrade type"}), 400
-    conn = sqlite3.connect("bot_database.db")
-    cursor = conn.cursor()
-    # Перевіряємо, чи існує користувач
-    cursor.execute("SELECT balance, damage FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    if not user:  # Користувач не знайдений
-        conn.close()
-        return jsonify({"success": False, "message": "User not found"}), 404
-    # Отримуємо дані користувача
-    balance, damage = user
-    # Логіка покупки покращення
-    if upgrade_type == "damage" and balance >= 10:
-        balance -= 10
-        damage += 1
-        cursor.execute("UPDATE users SET balance = ?, damage = ? WHERE id = ?", (balance, damage, user_id))
+    try:
+        data = request.get_json()
+        user_id = data.get("user_id")
+        upgrade_type = data.get("type")
+
+        if not user_id or not upgrade_type:
+            return jsonify({"error": "User ID and upgrade type are required"}), 400
+
+        conn = sqlite3.connect("bot_database.db")
+        cursor = conn.cursor()
+
+        # Отримуємо поточний баланс і урон користувача
+        cursor.execute("SELECT balance, damage FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        balance, damage = user
+
+        # Вартість апгрейду
+        upgrade_cost = 10
+
+        if balance < upgrade_cost:
+            return jsonify({"success": False, "message": "Not enough balance!"}), 400
+
+        # Знімаємо гроші, збільшуємо урон
+        new_balance = balance - upgrade_cost
+        new_damage = damage + 1
+
+        cursor.execute("UPDATE users SET balance = ?, damage = ? WHERE id = ?", (new_balance, new_damage, user_id))
         conn.commit()
         conn.close()
-        return jsonify({"success": True, "balance": balance, "damage": damage})
-    conn.close()
-    return jsonify({"success": False, "message": "Not enough balance or invalid upgrade type"})
+
+        return jsonify({"success": True, "balance": new_balance, "damage": new_damage})
+
+    except Exception as e:
+        print(f"[BUY UPGRADE ERROR] {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
+    
 if __name__ == "__main__":
     app.run(debug=True)
