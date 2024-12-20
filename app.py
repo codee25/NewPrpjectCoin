@@ -59,36 +59,36 @@ def get_stats():
 def hit_monster():
     data = request.get_json()
     user_id = data.get("user_id")
-    print(f"[HIT MONSTER] Received request with user_id: {user_id}")
     if not user_id:
         return jsonify({"error": "User ID is required"}), 400
 
     conn = sqlite3.connect("bot_database.db")
     cursor = conn.cursor()
 
-    # Перевіряємо, чи існує користувач
-    cursor.execute("SELECT damage, hp, balance FROM users WHERE id = ?", (user_id,))
+    # Отримуємо поточний HP і урон
+    cursor.execute("SELECT damage, hp FROM users WHERE id = ?", (user_id,))
     result = cursor.fetchone()
-
     if not result:
         conn.close()
         return jsonify({"error": "User not found"}), 404
 
-    damage, hp, balance = result
-
-    # Оновлюємо HP монстра
+    damage, hp = result
     hp -= damage
     if hp <= 0:
         hp = 100
-        balance += 10
-        cursor.execute("UPDATE users SET monsters_killed = monsters_killed + 1 WHERE id = ?", (user_id,))
+        cursor.execute("UPDATE users SET balance = balance + 10, monsters_killed = monsters_killed + 1 WHERE id = ?", (user_id,))
+        print(f"[DB UPDATE] Added 10 coins for user {user_id}")
 
-    # Записуємо оновлення у базу
-    cursor.execute("UPDATE users SET hp = ?, balance = ? WHERE id = ?", (hp, balance, user_id))
-    conn.commit()  # НЕ ЗАБУВАЙТЕ ПРО commit()!
+    # Оновлюємо HP у базі
+    cursor.execute("UPDATE users SET hp = ? WHERE id = ?", (hp, user_id))
+    print(f"[DB UPDATE] Updated HP to {hp} for user {user_id}")
+
+    conn.commit()
     conn.close()
 
-    return jsonify({"balance": balance, "hp": hp})
+    # Логування для перевірки
+    print(f"[HIT MONSTER] User {user_id}, Damage: {damage}, New HP: {hp}")
+    return jsonify({"balance": result[0], "hp": hp})
 
 @app.route("/api/buy", methods=["POST"])
 def buy_upgrade():
