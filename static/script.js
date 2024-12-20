@@ -64,18 +64,15 @@ async function hitMonster() {
 // Обробка покупки покращень
 async function buyUpgrade(type) {
     try {
-        console.log("Sending POST request to /api/buy...");
         const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, username: "YourUsername" })
-
+            body: JSON.stringify({ user_id: userId, type: type })
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
         const data = await response.json();
-        console.log("Upgrade response:", data);
 
         if (data.success) {
             alert("🎉 Upgrade successful!");
