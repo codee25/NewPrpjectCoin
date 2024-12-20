@@ -26,46 +26,34 @@ setup_database()
 # Отримати статистику користувача
 @app.route("/api/stats", methods=["GET", "POST"])
 def get_stats():
-    try:
-        data = request.get_json()
-        user_id = data.get("user_id")
-        username = data.get("username", "Unknown")
+    data = request.get_json()
+    user_id = data.get("user_id")
 
-        if not user_id:
-            return jsonify({"error": "User ID is required"}), 400
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
 
-        print(f"[GET STATS] Received request with user_id: {user_id}, username: {username}")
+    conn = sqlite3.connect("bot_database.db")
+    cursor = conn.cursor()
 
-        conn = sqlite3.connect("bot_database.db")
-        cursor = conn.cursor()
+    # Шукаємо username за user_id
+    cursor.execute("SELECT username, balance, hp, damage FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
 
-        # Перевіряємо, чи існує користувач
-        cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
+    if not user:
+        # Якщо користувач не існує, створюємо його
+        username = "Unknown"
+        cursor.execute('''
+            INSERT INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
+            VALUES (?, ?, 0, 10, 1, 100, 1, 0)
+        ''', (user_id, username))
+        conn.commit()
+        balance, hp, damage = 0, 100, 1
+    else:
+        username, balance, hp, damage = user
 
-        if not user:
-            # Якщо користувача не знайдено, додаємо його
-            cursor.execute('''
-                INSERT INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
-                VALUES (?, ?, 0, 10, 1, 100, 1, 0)
-            ''', (user_id, username))
-            conn.commit()
-            cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
-            user = cursor.fetchone()
-
-        conn.close()
-
-        # Повертаємо дані користувача
-        return jsonify({
-            "balance": user[0],
-            "hp": user[1],
-            "damage": user[2]
-        })
-
-    except Exception as e:
-        print(f"[GET STATS ERROR] {e}")
-        return jsonify({"error": "An internal error occurred"}), 500
-
+    conn.close()
+    return jsonify({"username": username, "balance": balance, "hp": hp, "damage": damage})
+   
 # Обробити клік по монстру
 @app.route("/api/hit", methods=["POST"])
 def hit_monster():
