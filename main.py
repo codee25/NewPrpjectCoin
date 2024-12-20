@@ -39,6 +39,9 @@ def setup_user(user_id, username):
         INSERT OR IGNORE INTO users (id, username) 
         VALUES (?, ?)
     ''', (user_id, username))
+    cursor.execute('''
+        UPDATE users SET username = ? WHERE id = ?
+    ''', (username, user_id))
     conn.commit()
     conn.close()
 
