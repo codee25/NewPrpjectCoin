@@ -47,13 +47,11 @@ async function hitMonster() {
         const response = await fetch("/api/hit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId }) // Передаємо user_id
+            body: JSON.stringify({ user_id: userId })
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
         const data = await response.json();
-        if (data.error) throw new Error(data.error);
 
         updateUI(data.balance, data.hp, localStorage.getItem("damage"));
     } catch (error) {
