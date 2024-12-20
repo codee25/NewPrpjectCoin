@@ -68,20 +68,26 @@ async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "Unknown"
 
-    # Додаємо нового користувача або ігноруємо, якщо він уже є
+    # Зберігаємо username і user_id в базу даних
+    conn = sqlite3.connect("bot_database.db")
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
+        VALUES (?, ?, 0, 10, 1, 100, 1, 0)
+    ''', (user_id, username))
+    conn.commit()
+    conn.close()
 
-    setup_user(user_id, username)
     start_button = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text="🚀 Launch App",
-                    web_app=WebAppInfo(url=f"https://newprpjectcoin.onrender.com/?user_id={user_id}")
+                    web_app=WebAppInfo(url=f"https://your-app-url.com/?user_id={user_id}")
                 )
             ]
         ]
     )
-
     await message.answer(f"🎮 Welcome, {username}!\n🚀 Launch the app to start playing.", reply_markup=start_button)
 
 # Обробка команди /reward
