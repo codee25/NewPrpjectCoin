@@ -26,28 +26,45 @@ setup_database()
 # Отримати статистику користувача
 @app.route("/api/stats", methods=["GET", "POST"])
 def get_stats():
-    if request.method == "POST":
+    try:
         data = request.get_json()
         user_id = data.get("user_id")
-        username = data.get("username", "Unknown")  # Отримуємо ім'я користувача
-
-        print(f"[GET STATS] Received request with user_id: {user_id}, username: {username}")
+        username = data.get("username", "Unknown")
 
         if not user_id:
             return jsonify({"error": "User ID is required"}), 400
 
+        print(f"[GET STATS] Received request with user_id: {user_id}, username: {username}")
+
         conn = sqlite3.connect("bot_database.db")
         cursor = conn.cursor()
 
-        # Якщо `username` змінюється, оновлюємо його
-        cursor.execute('''
-            INSERT OR IGNORE INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
-            VALUES (?, ?, 0, 10, 1, 100, 1, 0)
-        ''', (user_id, username))
-        cursor.execute('''
-            UPDATE users SET username = ? WHERE id = ?
-        ''', (username, user_id))
-        conn.commit()
+        # Перевіряємо, чи існує користувач
+        cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            # Якщо користувача не знайдено, додаємо його
+            cursor.execute('''
+                INSERT INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
+                VALUES (?, ?, 0, 10, 1, 100, 1, 0)
+            ''', (user_id, username))
+            conn.commit()
+            cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
+            user = cursor.fetchone()
+
+        conn.close()
+
+        # Повертаємо дані користувача
+        return jsonify({
+            "balance": user[0],
+            "hp": user[1],
+            "damage": user[2]
+        })
+
+    except Exception as e:
+        print(f"[GET STATS ERROR] {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 # Обробити клік по монстру
 @app.route("/api/hit", methods=["POST"])
