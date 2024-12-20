@@ -54,35 +54,37 @@ def get_stats():
 def hit_monster():
     data = request.get_json()
     user_id = data.get("user_id")
+    print(f"[HIT MONSTER] Received request with user_id: {user_id}")
     if not user_id:
         return jsonify({"error": "User ID is required"}), 400
+
     conn = sqlite3.connect("bot_database.db")
     cursor = conn.cursor()
-    # Перевіряємо, чи існує користувач, і створюємо його, якщо немає
-    cursor.execute('''
-        INSERT OR IGNORE INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
-        VALUES (?, ?, 0, 10, 1, 100, 1, 0)
-    ''', (user_id, "Unknown"))
-    # Отримуємо HP і урон користувача
-    cursor.execute("SELECT damage, hp FROM users WHERE id = ?", (user_id,))
+
+    # Перевіряємо, чи існує користувач
+    cursor.execute("SELECT damage, hp, balance FROM users WHERE id = ?", (user_id,))
     result = cursor.fetchone()
+
     if not result:
         conn.close()
         return jsonify({"error": "User not found"}), 404
-    damage, hp = result
-    # Зменшуємо HP монстра
+
+    damage, hp, balance = result
+
+    # Оновлюємо HP монстра
     hp -= damage
     if hp <= 0:
         hp = 100
-        cursor.execute("UPDATE users SET balance = balance + 10, monsters_killed = monsters_killed + 1 WHERE id = ?", (user_id,))
-    # Оновлюємо HP у базі даних
-    cursor.execute("UPDATE users SET hp = ? WHERE id = ?", (hp, user_id))
-    conn.commit()
-    # Повертаємо оновлені дані
-    cursor.execute("SELECT balance, hp FROM users WHERE id = ?", (user_id,))
-    balance, hp = cursor.fetchone()
+        balance += 10
+        cursor.execute("UPDATE users SET monsters_killed = monsters_killed + 1 WHERE id = ?", (user_id,))
+
+    # Записуємо оновлення у базу
+    cursor.execute("UPDATE users SET hp = ?, balance = ? WHERE id = ?", (hp, balance, user_id))
+    conn.commit()  # НЕ ЗАБУВАЙТЕ ПРО commit()!
     conn.close()
+
     return jsonify({"balance": balance, "hp": hp})
+
 @app.route("/api/buy", methods=["POST"])
 def buy_upgrade():
     data = request.get_json()
