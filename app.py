@@ -29,32 +29,26 @@ def get_stats():
     if request.method == "POST":
         data = request.get_json()
         user_id = data.get("user_id")
-        username = data.get("username", "Unknown")
+        username = data.get("username", "Unknown")  # Отримуємо ім'я користувача
+
         print(f"[GET STATS] Received request with user_id: {user_id}, username: {username}")
-    elif request.method == "GET":
-        user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({"error": "User ID is required"}), 400
-    conn = sqlite3.connect("bot_database.db")
-    cursor = conn.cursor()
-    # Перевірка існування користувача
-    cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    # Створення нового користувача, якщо його немає
-    if not user:
+
+        if not user_id:
+            return jsonify({"error": "User ID is required"}), 400
+
+        conn = sqlite3.connect("bot_database.db")
+        cursor = conn.cursor()
+
+        # Якщо `username` змінюється, оновлюємо його
         cursor.execute('''
-        INSERT OR IGNORE INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
-        VALUES (?, ?, 0, 10, 1, 100, 1, 0)
-    ''', (user_id, username))
+            INSERT OR IGNORE INTO users (id, username, balance, energy, damage, hp, level, monsters_killed)
+            VALUES (?, ?, 0, 10, 1, 100, 1, 0)
+        ''', (user_id, username))
+        cursor.execute('''
+            UPDATE users SET username = ? WHERE id = ?
+        ''', (username, user_id))
         conn.commit()
-        cursor.execute("SELECT balance, hp, damage FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-    conn.close()
-    return jsonify({
-        "balance": user[0],
-        "hp": user[1],
-        "damage": user[2]
-    })
+
 # Обробити клік по монстру
 @app.route("/api/hit", methods=["POST"])
 def hit_monster():
